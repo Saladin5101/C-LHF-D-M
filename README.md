@@ -25,4 +25,4 @@ This package manager is generally used in conjunction with a compiler (especiall
 - 4. check root menu
 
 ## LICENSE
-We use GNU AGPL Version 3 to distribute our code, with some exceptions, see (COPYING.AGPL-EXCEPTION)[COPYING.AGPL-EXCEPTION] for details.
+We use GNU AGPL Version 3 to distribute our code.
