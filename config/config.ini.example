@@ -1,0 +1,23 @@
+# C-LHF&D-M Configuration File
+# Edit this file to customize package manager behavior
+
+# Registry Configuration
+[registry]
+registry_url=https://saladin510-orangeyouhome-erath.online
+connection_timeout=30
+
+# Performance Settings
+[performance]
+max_concurrent_ops=32
+
+# Directory Configuration
+# Uncomment and modify to use custom paths
+# [directories]
+# packages_dir=/custom/path/to/packages
+# cache_dir=/custom/path/to/cache
+# registry_dir=/custom/path/to/registry
+
+# Advanced Options (uncomment to enable)
+# [logging]
+# log_level=info
+# log_file=~/.clhfm/clhfm.log

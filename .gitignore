@@ -1,0 +1,27 @@
+# Build artifacts
+build/
+bin/
+*.o
+*.a
+*.so
+*.exe
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Dependencies
+node_modules/
+package-lock.json
+
+# Testing
+*.out
+test_runner
+
+# Local config
+.env
+config/local.conf
