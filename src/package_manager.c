@@ -7,6 +7,7 @@
 #include <errno.h>
 #include "package_manager.h"
 #include "concurrency.h"
+#include "network.h"
 
 /**
  * Create a new package manager instance
@@ -68,29 +69,68 @@ int clhfm_manager_install(clhfm_manager_t *manager, const char *package_name, co
         return -1;
     }
 
-    printf("Installing package: %s (version %s)\n", package_name, version);
+    /* Resolve "latest" to a real version number */
+    char *resolved_version = NULL;
+    if (strcmp(version, "latest") == 0) {
+        printf("Fetching latest version for %s...\n", package_name);
+        resolved_version = clhfm_network_fetch_latest_version(manager->config, package_name);
+        if (!resolved_version) {
+            fprintf(stderr, "Error: could not determine latest version of %s\n", package_name);
+            return -1;
+        }
+        version = resolved_version;
+    }
 
-    /* Create package metadata */
-    clhfm_package_t *pkg = clhfm_package_create(package_name, version);
-    if (!pkg) {
-        fprintf(stderr, "Error creating package metadata\n");
+    printf("Installing package: %s@%s\n", package_name, version);
+
+    /* Download archive to cache dir */
+    char archive_path[512];
+    snprintf(archive_path, sizeof(archive_path), "%s/%s-%s.tar.gz",
+             manager->config->cache_dir, package_name, version);
+
+    if (clhfm_network_download_package(manager->config, package_name, version, archive_path) != 0) {
+        free(resolved_version);
         return -1;
     }
 
-    /* Build package file path */
+    /* Extract archive into packages dir */
+    char install_dir[512];
+    snprintf(install_dir, sizeof(install_dir), "%s/%s", manager->packages_cache_path, package_name);
+    if (mkdir(install_dir, 0755) != 0 && errno != EEXIST) {
+        fprintf(stderr, "Error creating install directory: %s\n", install_dir);
+        free(resolved_version);
+        return -1;
+    }
+
+    char tar_cmd[1024];
+    snprintf(tar_cmd, sizeof(tar_cmd), "tar -xzf \"%s\" -C \"%s\" 2>&1", archive_path, install_dir);
+    if (system(tar_cmd) != 0) {
+        fprintf(stderr, "Error extracting archive for %s\n", package_name);
+        free(resolved_version);
+        return -1;
+    }
+
+    /* Save package metadata */
+    clhfm_package_t *pkg = clhfm_package_create(package_name, version);
+    if (!pkg) {
+        free(resolved_version);
+        return -1;
+    }
+    pkg->install_path = (char *)malloc(strlen(install_dir) + 1);
+    strcpy(pkg->install_path, install_dir);
+
     char pkg_path[512];
     snprintf(pkg_path, sizeof(pkg_path), "%s/%s.pkg", manager->packages_cache_path, package_name);
-
-    /* Save atomically - supports concurrent writes */
     int ret = clhfm_package_save_atomic(pkg, pkg_path);
+    clhfm_package_free(pkg);
+    free(resolved_version);
+
     if (ret != 0) {
         fprintf(stderr, "Error saving package metadata\n");
-        clhfm_package_free(pkg);
         return -1;
     }
 
     printf("Successfully installed: %s@%s\n", package_name, version);
-    clhfm_package_free(pkg);
     return 0;
 }
 
@@ -145,11 +185,27 @@ int clhfm_manager_update(clhfm_manager_t *manager, const char *package_name) {
         return -1;
     }
 
-    /* Check for newer version (simplified - would query registry) */
-    printf("Package %s is already at latest version: %s\n", package_name, pkg->version);
+    /* Query registry for the latest version */
+    char *latest = clhfm_network_fetch_latest_version(manager->config, package_name);
+    if (!latest) {
+        fprintf(stderr, "Could not fetch latest version info for %s\n", package_name);
+        clhfm_package_free(pkg);
+        return -1;
+    }
 
+    if (strcmp(latest, pkg->version) == 0) {
+        printf("%s is already at the latest version (%s)\n", package_name, pkg->version);
+        free(latest);
+        clhfm_package_free(pkg);
+        return 0;
+    }
+
+    printf("Updating %s: %s -> %s\n", package_name, pkg->version, latest);
     clhfm_package_free(pkg);
-    return 0;
+
+    int ret = clhfm_manager_install(manager, package_name, latest);
+    free(latest);
+    return ret;
 }
 
 /**
@@ -341,8 +397,14 @@ int clhfm_manager_push_package(
     }
 
     printf("Pushing package: %s@%s\n", package_name, version);
-    /* TODO: Implement registry push logic */
-    return 0;
+
+    /* source_url is treated as the local archive path to upload */
+    if (!source_url || source_url[0] == '\0') {
+        fprintf(stderr, "Error: provide the local archive path as the source argument\n");
+        return -1;
+    }
+
+    return clhfm_network_push_package(manager->config, package_name, version, source_url);
 }
 
 /**
@@ -359,6 +421,5 @@ int clhfm_manager_create_tag(
     }
 
     printf("Creating tag '%s' for %s@%s\n", tag_name, package_name, version);
-    /* TODO: Implement tagging logic */
-    return 0;
+    return clhfm_network_create_tag(manager->config, package_name, tag_name, version);
 }

@@ -204,7 +204,7 @@ int clhfm_config_load_from_file(clhfm_config_t *config) {
         clhfm_config_parse_line(config, line);
     }
 
-    fclose(config_file);
+    fclose(f);
     free(config_file);
 
     return 0;

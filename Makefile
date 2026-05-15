@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -g -Iinclude -std=c11 -D_GNU_SOURCE
-LDFLAGS = -lm
+LDFLAGS = -lm -lcurl
 
 # Directories
 SRC_DIR = src

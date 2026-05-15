@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include "package_manager.h"
+#include "network.h"
 
 #define VERSION "1.0.0"
 
@@ -40,6 +41,8 @@ int main(int argc, char *argv[]) {
         print_help();
         return 0;
     }
+
+    clhfm_network_init();
 
     /* Initialize configuration system first */
     if (clhfm_config_create_default() != 0) {
@@ -280,5 +283,6 @@ int main(int argc, char *argv[]) {
     }
 
     clhfm_manager_free(manager);
+    clhfm_network_cleanup();
     return ret_code;
 }
