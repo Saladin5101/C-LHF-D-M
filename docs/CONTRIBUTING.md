@@ -15,12 +15,6 @@ Thank you for your interest in contributing to C-LHF&D-M!
    make clean
    make all
    ```
-
-3. Run tests:
-   ```bash
-   make test
-   ```
-
 ## Code Guidelines
 
 - Use `gcc` compatible C code
@@ -36,11 +30,7 @@ Thank you for your interest in contributing to C-LHF&D-M!
 - Ensure all tests pass before submitting PR
 
 ## Commit Messages
-
-- Use clear, descriptive commit messages
-- Reference issues when applicable
-- Follow the format: `[type]: brief description`
-  - Types: feature, bugfix, docs, refactor, test
+We need you said what do you do ONLY.
 
 ## License
 
